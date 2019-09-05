@@ -6,16 +6,27 @@ require 'active_support/inflector'
 class SQLObject
 
   def self.columns
-
+    @columns ||= DBConnection.execute2(<<-SQL)
+      SELECT
+        *
+      FROM
+        #{self.table_name}
+    SQL
+    @columns[0].map { |column| column.to_sym }
   end
 
   #Columns are all symbols
   def self.finalize!
-
+    self.columns.each do |column|
+      define_method(column) { attributes[column] }
+      define_method("#{column.to_s}=") do |val| 
+        attributes[column] = val
+      end
+    end
   end
 
   def self.table_name=(table_name)
-
+    @table_name = table_name
   end
 
   def self.table_name
