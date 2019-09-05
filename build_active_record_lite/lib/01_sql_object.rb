@@ -30,19 +30,41 @@ class SQLObject
   end
 
   def self.table_name
-
+    @table_name || self.to_s.downcase.pluralize
   end
 
   def self.all
-
+    query = DBConnection.execute(<<-SQL)
+      SELECT
+        *
+      FROM
+        #{self.table_name}
+    SQL
+    self.parse_all(query)
   end
 
   def self.parse_all(results)
-
+    parsed = []
+    results.each do |result|
+      instance = self.new
+      result.each do |k,v|
+        instance.send("#{k}=", v)
+      end
+      parsed << instance
+    end
+    parsed
   end
 
   def self.find(id)
-
+    found = DBConnection.execute(<<-SQL, id)
+      SELECT
+        *
+      FROM
+        #{self.table_name}
+      WHERE
+        id = ?
+    SQL
+    self.parse_all(found).first
   end
 
   def initialize(params = {})
