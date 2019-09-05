@@ -68,23 +68,46 @@ class SQLObject
   end
 
   def initialize(params = {})
-
+    params.each do |attr_name, value|
+      attr_name = attr_name.to_sym
+      raise "unknown attribute '#{attr_name}'" unless self.class.columns.include?(attr_name)
+      send("#{attr_name}=", value)
+    end
   end
 
   def attributes
-
+    @attributes ||= {}
   end
 
   def attribute_values
-
+    self.attributes.values
   end
 
   def insert
-
+    keys = attributes.keys
+    q_mark_arr = ['?'] * attribute_values.length
+    DBConnection.execute(<<-SQL, *attribute_values)
+      INSERT INTO
+        #{self.class.table_name} (#{keys.join(',')})
+      VALUES
+        (#{q_mark_arr.join(',')})
+    SQL
+    self.id = DBConnection.last_insert_row_id
   end
 
   def update
-
+    keys = attributes.keys
+    q_mark_arr = ['?'] * attribute_values.length
+    set_mapping = self.class.columns.map { |column| "#{column} = ?"}
+    DBConnection.execute(<<-SQL, *attribute_values)
+      UPDATE
+        #{self.class.table_name}
+      SET
+        #{set_mapping.join(',')}
+      WHERE
+        id = #{self.id}
+    SQL
+    self.id = DBConnection.last_insert_row_id
   end
 
   def save
