@@ -17,6 +17,5 @@ module Searchable
 end
 
 class SQLObject
-  # Mixin Searchable here...
   extend Searchable
 end
